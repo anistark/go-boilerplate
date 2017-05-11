@@ -12,6 +12,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", indexHandler)
-	fmt.Println("Server started at http://localhost:8080")
+	fmt.Println("Go Boilerplate Server started at http://localhost:8080")
 	http.ListenAndServe(":8080", nil)
 }

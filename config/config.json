@@ -2,16 +2,16 @@
 	"Database": {
 		"Type": "MongoDB",
 		"Bolt": {
- 			"Path": "magnolia.db"
+ 			"Path": "goboilerplate.db"
   		},
 		"MongoDB": {
 			"URL": "127.0.0.1",
-			"Database": "magnolia"
+			"Database": "goboilerplate"
 		},
 		"MySQL": {
 			"Username": "root",
 			"Password": "",
-			"Name": "magnolia",
+			"Name": "goboilerplate",
 			"Hostname": "127.0.0.1",
 			"Port": 3306,
 			"Parameter": "?parseTime=true"

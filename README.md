@@ -1,17 +1,17 @@
-# Magnolia
+# Go Boilerplate
 
 *Under Development.*
 
 ## Building image
 
 ```
-docker build -t magnolia .
+docker build -t go-boilerplate .
 ```
 
 ## Run Docker image
 
 ```
-docker run -p 8000:8080 --name magnolia_container magnolia
+docker run -p 8000:8080 --name go-boilerplate-container go-boilerplate
 ```
 
 ## Stop the container
