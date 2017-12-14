@@ -2,7 +2,7 @@
 
 *Under Development.*
 
-## Building image
+<!-- ## Building image
 
 ```
 docker build -t go-boilerplate .
@@ -18,4 +18,10 @@ docker run -p 8000:8080 --name go-boilerplate-container go-boilerplate
 
 ```
 docker stop [id of the container]
+``` -->
+
+## Run
+
+```
+. ./run.sh
 ```

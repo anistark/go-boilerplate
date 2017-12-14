@@ -31,3 +31,6 @@ gin-bin
 
 # Environment File
 .env
+
+# Build Files
+go-boilerplate

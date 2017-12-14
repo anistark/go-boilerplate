@@ -1,67 +1,80 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
-	"runtime"
-	"strings"
+	"net/url"
+	"os"
 
-	_ "github.com/lib/pq"
-	"github.com/pkg/errors"
+	"github.com/anistark/gorouter"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
-const (
-	host     = "localhost"
-	port     = 5432
-	user     = "postgres"
-	password = "password"
-	dbname   = "db_name"
+type user struct {
+	name string
+}
+
+var (
+	DB *gorm.DB
 )
-
-func indexHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "hello world, I'm running on %s with an %s CPU ", runtime.GOOS, runtime.GOARCH)
-}
-
-type MemberData struct {
-	ID     int64
-	Handle string
-	Email  string
-}
-
-func userHandler(w http.ResponseWriter, r *http.Request) {
-	rawPath := r.URL.Path
-	splittedString := strings.Split(rawPath, "/")
-	username := splittedString[2]
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
-	db, err := sql.Open("postgres", psqlInfo)
-	// fmt.Println(db)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	queryString := "SELECT id, handle, email FROM member WHERE handle = $1"
-	iterator, err := db.Query(queryString, username)
-	defer iterator.Close()
-	var rows []MemberData
-	for iterator.Next() {
-		var row = MemberData{}
-		err = iterator.Scan(
-			&row.ID, &row.Handle, &row.Email)
-		if err != nil {
-			err = errors.Wrapf(err, "Event row scanning failed (type=%s)", username)
-			log.Fatal(err)
-		}
-
-		rows = append(rows, row)
-	}
-	fmt.Fprintf(w, "Hello %s. Your member id is %d and email is: %s", rows[0].Handle, rows[0].ID, rows[0].Email)
-}
 
 func main() {
-	http.HandleFunc("/", indexHandler)
-	http.HandleFunc("/user/", userHandler)
-	fmt.Println("Go Boilerplate Server started at http://localhost:8080")
-	http.ListenAndServe(":8080", nil)
+	r := gorouter.New(fallThrough)
+	DB, err := gorm.Open("postgres", "host=localhost user=postgres dbname=testgo sslmode=disable password=ani")
+	fmt.Println("DB response:", DB, err)
+	defer DB.Close()
+	r.Use(fooMiddleware, barMiddleware, gorouter.Static()) // add global/router level middleware to run on every route.
+	r.GET("/", root)
+	r.GET("/users", users, authMiddleware)
+	r.GET("/dbmigrate", dbMigrate)
+	r.EnableLogging(os.Stdout)
+	r.Run(":8080")
+}
+
+// Notice the Middleware has a return type. True means go to the next middleware. False
+// means to stop right here. If you return false to end the request-response cycle you MUST
+// write something back to the client, otherwise it will be left hanging.
+func fooMiddleware(w http.ResponseWriter, r *http.Request, params url.Values) bool {
+	fmt.Println("Foo!")
+	return true
+}
+
+func barMiddleware(w http.ResponseWriter, r *http.Request, params url.Values) bool {
+	fmt.Println("Bar!")
+	return true
+}
+
+func authMiddleware(w http.ResponseWriter, r *http.Request, params url.Values) bool {
+	// fmt.Println("Doing Auth here")
+	u := user{name: r.URL.Query().Get("name")}
+	// fmt.Printf("%x\n", &u.name)
+	gorouter.Set(r, "user", u)
+	return true
+}
+
+func fallThrough(w http.ResponseWriter, r *http.Request, params url.Values) {
+	http.Error(w, "404 :-:- For your safety, do not push it.", http.StatusNotFound)
+}
+
+func test(w http.ResponseWriter, r *http.Request, params url.Values) {
+	fmt.Println("params", params)
+	fmt.Fprintf(w, "Hello World!")
+}
+
+func root(w http.ResponseWriter, r *http.Request, params url.Values) {
+	w.WriteHeader(200)
+	w.Write([]byte("Root!"))
+}
+
+func users(w http.ResponseWriter, r *http.Request, params url.Values) {
+	u := gorouter.Get(r, "user").(user)
+	// fmt.Printf("%x\n", &u.name)
+	fmt.Println("user is: ", u.name)
+	fmt.Fprint(w, "user is: ", u.name)
+}
+
+func dbMigrate(w http.ResponseWriter, r *http.Request, params url.Values) {
+	DB.AutoMigrate(&User{})
+	fmt.Fprint(w, "DB Migration done!")
 }
